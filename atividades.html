@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atividades</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Gestão de Atividades</h1>
+        
+        <div class="menu">
+            <a href="index.html">🏠 Início</a>
+            <a href="voluntarios.html">👥 Voluntários</a>
+            <a href="atividades.html">📋 Atividades</a>
+            <a href="agendamento.html">📅 Agendamentos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+        </div>
+        
+        <h2>Criar Nova Atividade</h2>
+        
+        <div id="mensagem" class="mensagem" style="display:none;"></div>
+        
+        <form id="formAtividade">
+            <div class="form-group">
+                <label>Nome da atividade:</label>
+                <input type="text" id="nomeAtividade" placeholder="Ex: Campanha de Doação" required>
+            </div>
+            <div class="form-group">
+                <label>Descrição:</label>
+                <input type="text" id="descricao" placeholder="Ex: Arrecadação de alimentos">
+            </div>
+            <div class="form-group">
+                <label>Data:</label>
+                <input type="date" id="dataAtividade" required>
+            </div>
+            <div class="form-group">
+                <label>Horário de início:</label>
+                <input type="time" id="horaInicio" required>
+            </div>
+            <div class="form-group">
+                <label>Horário de término:</label>
+                <input type="time" id="horaFim" required>
+            </div>
+            <div class="form-group">
+                <label>Número de vagas:</label>
+                <input type="number" id="vagas" min="1" value="5" required>
+            </div>
+            <button type="submit" class="btn">✅ Criar Atividade</button>
+            <button type="reset" class="btn" style="background:#95a5a6;">Limpar</button>
+        </form>
+        
+        <hr>
+        
+        <h2>📅 Atividades Cadastradas</h2>
+        <div id="listaAtividades">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Atividade</th>
+                        <th>Data</th>
+                        <th>Horário</th>
+                        <th>Vagas</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaAtividades">
+                    <!-- Os dados serão inseridos aqui pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = function() {
+            listarAtividades();
+        };
+        
+        document.getElementById('formAtividade').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nomeAtividade').value;
+            const descricao = document.getElementById('descricao').value;
+            const data = document.getElementById('dataAtividade').value;
+            const horaInicio = document.getElementById('horaInicio').value;
+            const horaFim = document.getElementById('horaFim').value;
+            const vagas = document.getElementById('vagas').value;
+            
+            if (nome === '' || data === '' || horaInicio === '' || horaFim === '') {
+                mostrarMensagem('Preencha todos os campos obrigatórios.', 'erro');
+                return;
+            }
+            
+            let atividades = JSON.parse(localStorage.getItem('atividades')) || [];
+            
+            const novaAtividade = {
+                id: Date.now(),
+                nome: nome,
+                descricao: descricao,
+                data: data,
+                horaInicio: horaInicio,
+                horaFim: horaFim,
+                vagas: vagas
+            };
+            
+            atividades.push(novaAtividade);
+            localStorage.setItem('atividades', JSON.stringify(atividades));
+            
+            mostrarMensagem('✅ Atividade criada com sucesso!', 'sucesso');
+            document.getElementById('formAtividade').reset();
+            listarAtividades();
+        });
+        
+        function listarAtividades() {
+            const atividades = JSON.parse(localStorage.getItem('atividades')) || [];
+            const tabela = document.getElementById('tabelaAtividades');
+            
+            if (atividades.length === 0) {
+                tabela.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma atividade cadastrada.</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            atividades.forEach(function(atividade, index) {
+                const dataFormatada = atividade.data.split('-').reverse().join('/');
+                html += `
+                    <tr>
+                        <td><strong>${atividade.nome}</strong></td>
+                        <td>${dataFormatada}</td>
+                        <td>${atividade.horaInicio} - ${atividade.horaFim}</td>
+                        <td>${atividade.vagas}</td>
+                        <td>
+                            <button onclick="excluirAtividade(${index})" class="btn btn-danger" style="padding:5px 10px; font-size:12px;">🗑️ Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tabela.innerHTML = html;
+        }
+        
+        function excluirAtividade(index) {
+            if (confirm('Tem certeza que deseja excluir esta atividade?')) {
+                let atividades = JSON.parse(localStorage.getItem('atividades')) || [];
+                atividades.splice(index, 1);
+                localStorage.setItem('atividades', JSON.stringify(atividades));
+                listarAtividades();
+                mostrarMensagem('🗑️ Atividade excluída com sucesso!', 'sucesso');
+            }
+        }
+        
+        function mostrarMensagem(texto, tipo) {
+            const div = document.getElementById('mensagem');
+            div.textContent = texto;
+            div.className = 'mensagem';
+            if (tipo === 'erro') {
+                div.classList.add('erro');
+            }
+            div.style.display = 'block';
+            setTimeout(function() {
+                div.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamentos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Gestão de Agendamentos</h1>
+        
+        <div class="menu">
+            <a href="index.html">🏠 Início</a>
+            <a href="voluntarios.html">👥 Voluntários</a>
+            <a href="atividades.html">📋 Atividades</a>
+            <a href="agendamento.html">📅 Agendamentos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+        </div>
+        
+        <h2>Registrar Presença</h2>
+        
+        <div id="mensagem" class="mensagem" style="display:none;"></div>
+        
+        <form id="formPresenca">
+            <div class="form-group">
+                <label>Selecione o voluntário:</label>
+                <select id="voluntarioSelect" required>
+                    <option value="">-- Selecione --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Selecione a atividade:</label>
+                <select id="atividadeSelect" required>
+                    <option value="">-- Selecione --</option>
+                </select>
+            </div>
+            <div class="botoes-acoes">
+                <button type="submit" name="acao" value="entrada" class="btn">✅ Check-in (Entrada)</button>
+                <button type="submit" name="acao" value="saida" class="btn btn-danger">⏹️ Check-out (Saída)</button>
+            </div>
+        </form>
+        
+        <hr>
+        
+        <h2>📋 Registros de Presença</h2>
+        <div id="listaPresencas">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Voluntário</th>
+                        <th>Atividade</th>
+                        <th>Data</th>
+                        <th>Entrada</th>
+                        <th>Saída</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPresencas">
+                    <!-- Os dados serão inseridos aqui pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = function() {
+            carregarSelects();
+            listarPresencas();
+        };
+        
+        // Carregar voluntários e atividades nos selects
+        function carregarSelects() {
+            const voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+            const atividades = JSON.parse(localStorage.getItem('atividades')) || [];
+            
+            const selectVoluntario = document.getElementById('voluntarioSelect');
+            const selectAtividade = document.getElementById('atividadeSelect');
+            
+            // Limpar e adicionar opção padrão
+            selectVoluntario.innerHTML = '<option value="">-- Selecione --</option>';
+            selectAtividade.innerHTML = '<option value="">-- Selecione --</option>';
+            
+            voluntarios.forEach(function(v) {
+                const option = document.createElement('option');
+                option.value = v.id;
+                option.textContent = v.nome;
+                selectVoluntario.appendChild(option);
+            });
+            
+            atividades.forEach(function(a) {
+                const option = document.createElement('option');
+                option.value = a.id;
+                option.textContent = a.nome + ' - ' + a.data;
+                selectAtividade.appendChild(option);
+            });
+        }
+        
+        // Registrar check-in/out
+        document.getElementById('formPresenca').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const voluntarioId = document.getElementById('voluntarioSelect').value;
+            const atividadeId = document.getElementById('atividadeSelect').value;
+            const acao = document.querySelector('button[type="submit"]:focus').value;
+            
+            if (voluntarioId === '' || atividadeId === '') {
+                mostrarMensagem('Selecione um voluntário e uma atividade.', 'erro');
+                return;
+            }
+            
+            let presencas = JSON.parse(localStorage.getItem('presencas')) || [];
+            
+            const agora = new Date();
+            const dataHoje = agora.toLocaleDateString('pt-BR');
+            const horaAgora = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            
+            // Verificar se já existe registro para hoje
+            let registroExistente = null;
+            if (acao === 'saida') {
+                registroExistente = presencas.find(function(p) {
+                    return p.voluntarioId == voluntarioId && 
+                           p.atividadeId == atividadeId && 
+                           p.data === dataHoje && 
+                           p.saida === '';
+                });
+            }
+            
+            if (acao === 'entrada') {
+                // Verificar se já fez check-in hoje
+                const jaCheckin = presencas.some(function(p) {
+                    return p.voluntarioId == voluntarioId && 
+                           p.atividadeId == atividadeId && 
+                           p.data === dataHoje && 
+                           p.entrada !== '';
+                });
+                
+                if (jaCheckin) {
+                    mostrarMensagem('Este voluntário já fez check-in hoje nesta atividade.', 'erro');
+                    return;
+                }
+                
+                const novoRegistro = {
+                    id: Date.now(),
+                    voluntarioId: voluntarioId,
+                    atividadeId: atividadeId,
+                    data: dataHoje,
+                    entrada: horaAgora,
+                    saida: ''
+                };
+                presencas.push(novoRegistro);
+                localStorage.setItem('presencas', JSON.stringify(presencas));
+                mostrarMensagem('✅ Check-in realizado com sucesso!', 'sucesso');
+                
+            } else if (acao === 'saida') {
+                if (!registroExistente) {
+                    mostrarMensagem('Este voluntário não fez check-in hoje nesta atividade.', 'erro');
+                    return;
+                }
+                
+                registroExistente.saida = horaAgora;
+                localStorage.setItem('presencas', JSON.stringify(presencas));
+                mostrarMensagem('⏹️ Check-out realizado com sucesso!', 'sucesso');
+            }
+            
+            document.getElementById('formPresenca').reset();
+            listarPresencas();
+            carregarSelects();
+        });
+        
+        function listarPresencas() {
+            const presencas = JSON.parse(localStorage.getItem('presencas')) || [];
+            const voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+            const atividades = JSON.parse(localStorage.getItem('atividades')) || [];
+            const tabela = document.getElementById('tabelaPresencas');
+            
+            if (presencas.length === 0) {
+                tabela.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum registro de presença.</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            presencas.forEach(function(p) {
+                const voluntario = voluntarios.find(v => v.id == p.voluntarioId);
+                const atividade = atividades.find(a => a.id == p.atividadeId);
+                const nomeVoluntario = voluntario ? voluntario.nome : 'Desconhecido';
+                const nomeAtividade = atividade ? atividade.nome : 'Desconhecida';
+                
+                html += `
+                    <tr>
+                        <td>${nomeVoluntario}</td>
+                        <td>${nomeAtividade}</td>
+                        <td>${p.data}</td>
+                        <td>${p.entrada}</td>
+                        <td>${p.saida || '⏳ Em andamento'}</td>
+                    </tr>
+                `;
+            });
+            
+            tabela.innerHTML = html;
+        }
+        
+        function mostrarMensagem(texto, tipo) {
+            const div = document.getElementById('mensagem');
+            div.textContent = texto;
+            div.className = 'mensagem';
+            if (tipo === 'erro') {
+                div.classList.add('erro');
+            }
+            div.style.display = 'block';
+            setTimeout(function() {
+                div.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

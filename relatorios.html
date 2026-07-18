@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .card-relatorio {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #2c3e50;
+        }
+        .card-relatorio.verde { border-color: #4CAF50; }
+        .card-relatorio.azul { border-color: #2196F3; }
+        .card-relatorio.laranja { border-color: #FF9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Relatórios</h1>
+        
+        <div class="menu">
+            <a href="index.html">🏠 Início</a>
+            <a href="voluntarios.html">👥 Voluntários</a>
+            <a href="atividades.html">📋 Atividades</a>
+            <a href="agendamento.html">📅 Agendamentos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+        </div>
+        
+        <div id="mensagem" class="mensagem" style="display:none;"></div>
+        
+        <!-- Relatório 1: Voluntários por Área -->
+        <div class="card-relatorio verde">
+            <h3>📌 Voluntários por Área de Interesse</h3>
+            <button onclick="gerarRelatorioAreas()" class="btn">Gerar Relatório</button>
+            <div id="relatorioAreas"></div>
+        </div>
+        
+        <!-- Relatório 2: Horas por Voluntário -->
+        <div class="card-relatorio azul">
+            <h3>⏱️ Horas Trabalhadas por Voluntário</h3>
+            <button onclick="gerarRelatorioHoras()" class="btn">Gerar Relatório</button>
+            <div id="relatorioHoras"></div>
+        </div>
+        
+        <!-- Relatório 3: Atividades Realizadas -->
+        <div class="card-relatorio laranja">
+            <h3>📋 Atividades Realizadas</h3>
+            <button onclick="gerarRelatorioAtividades()" class="btn">Gerar Relatório</button>
+            <div id="relatorioAtividades"></div>
+        </div>
+        
+        <hr>
+        
+        <div style="text-align:center; margin-top:20px;">
+            <button onclick="window.print()" class="btn" style="background:#2196F3;">🖨️ Imprimir Todos os Relatórios</button>
+        </div>
+    </div>
+    
+    <script>
+        function gerarRelatorioAreas() {
+            const voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+            const areas = {};
+            
+            voluntarios.forEach(function(v) {
+                if (areas[v.area]) {
+                    areas[v.area]++;
+                } else {
+                    areas[v.area] = 1;
+                }
+            });
+            
+            let html = '<table><thead><tr><th>Área</th><th>Quantidade</th></tr></thead><tbody>';
+            
+            if (Object.keys(areas).length === 0) {
+                html = '<p style="color:#888;">Nenhum voluntário cadastrado.</p>';
+            } else {
+                for (let area in areas) {
+                    html += `<tr><td>${area}</td><td>${areas[area]} voluntário(s)</td></tr>`;
+                }
+                html += '</tbody></table>';
+            }
+            
+            document.getElementById('relatorioAreas').innerHTML = html;
+            mostrarMensagem('✅ Relatório de áreas gerado!', 'sucesso');
+        }
+        
+        function gerarRelatorioHoras() {
+            const presencas = JSON.parse(localStorage.getItem('presencas')) || [];
+            const voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+            const horas = {};
+            
+            presencas.forEach(function(p) {
+                if (p.entrada && p.saida) {
+                    // Calcular horas (simplificado - apenas para demonstração)
+                    const entrada = p.entrada.split(':');
+                    const saida = p.saida.split(':');
+                    const horaEntrada = parseInt(entrada[0]);
+                    const minEntrada = parseInt(entrada[1]);
+                    const horaSaida = parseInt(saida[0]);
+                    const minSaida = parseInt(saida[1]);
+                    
+                    let diffHoras = horaSaida - horaEntrada;
+                    let diffMin = minSaida - minEntrada;
+                    
+                    if (diffMin < 0) {
+                        diffHoras--;
+                        diffMin += 60;
+                    }
+                    
+                    const totalHoras = diffHoras + (diffMin / 60);
+                    
+                    if (horas[p.voluntarioId]) {
+                        horas[p.voluntarioId] += totalHoras;
+                    } else {
+                        horas[p.voluntarioId] = totalHoras;
+                    }
+                }
+            });
+            
+            let html = '<table><thead><tr><th>Voluntário</th><th>Total de Horas</th></tr></thead><tbody>';
+            
+            if (Object.keys(horas).length === 0) {
+                html = '<p style="color:#888;">Nenhum registro de horas encontrado.</p>';
+            } else {
+                for (let id in horas) {
+                    const voluntario = voluntarios.find(v => v.id == id);
+                    const nome = voluntario ? voluntario.nome : 'Desconhecido';
+                    const horasFormatadas = horas[id].toFixed(1).replace('.', ',');
+                    html += `<tr><td>${nome}</td><td>${horasFormatadas}h</td></tr>`;
+                }
+                html += '</tbody></table>';
+            }
+            
+            document.getElementById('relatorioHoras').innerHTML = html;
+            mostrarMensagem('✅ Relatório de horas gerado!', 'sucesso');
+        }
+        
+        function gerarRelatorioAtividades() {
+            const presencas = JSON.parse(localStorage.getItem('presencas')) || [];
+            const atividades = JSON.parse(localStorage.getItem('atividades')) || [];
+            const contagem = {};
+            
+            presencas.forEach(function(p) {
+                if (p.entrada) {
+                    if (contagem[p.atividadeId]) {
+                        contagem[p.atividadeId]++;
+                    } else {
+                        contagem[p.atividadeId] = 1;
+                    }
+                }
+            });
+            
+            let html = '<table><thead><tr><th>Atividade</th><th>Data</th><th>Participantes</th></tr></thead><tbody>';
+            
+            if (Object.keys(contagem).length === 0) {
+                html = '<p style="color:#888;">Nenhuma atividade com participação registrada.</p>';
+            } else {
+                for (let id in contagem) {
+                    const atividade = atividades.find(a => a.id == id);
+                    if (atividade) {
+                        const dataFormatada = atividade.data.split('-').reverse().join('/');
+                        html += `<tr><td>${atividade.nome}</td><td>${dataFormatada}</td><td>${contagem[id]} voluntário(s)</td></tr>`;
+                    }
+                }
+                html += '</tbody></table>';
+            }
+            
+            document.getElementById('relatorioAtividades').innerHTML = html;
+            mostrarMensagem('✅ Relatório de atividades gerado!', 'sucesso');
+        }
+        
+        function mostrarMensagem(texto, tipo) {
+            const div = document.getElementById('mensagem');
+            div.textContent = texto;
+            div.className = 'mensagem';
+            if (tipo === 'erro') {
+                div.classList.add('erro');
+            }
+            div.style.display = 'block';
+            setTimeout(function() {
+                div.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

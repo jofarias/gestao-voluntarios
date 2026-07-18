@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voluntários</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>👥 Gestão de Voluntários</h1>
+        
+        <div class="menu">
+            <a href="index.html">🏠 Início</a>
+            <a href="voluntarios.html">👥 Voluntários</a>
+            <a href="atividades.html">📋 Atividades</a>
+            <a href="agendamento.html">📅 Agendamentos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+        </div>
+        
+        <h2>Cadastrar Voluntário</h2>
+        
+        <div id="mensagem" class="mensagem" style="display:none;"></div>
+        
+        <form id="formVoluntario">
+            <div class="form-group">
+                <label>Nome completo:</label>
+                <input type="text" id="nome" placeholder="Ex: Maria Silva" required>
+            </div>
+            <div class="form-group">
+                <label>CPF:</label>
+                <input type="text" id="cpf" placeholder="Ex: 123.456.789-00">
+            </div>
+            <div class="form-group">
+                <label>Telefone:</label>
+                <input type="text" id="telefone" placeholder="Ex: (11) 99999-9999">
+            </div>
+            <div class="form-group">
+                <label>E-mail:</label>
+                <input type="email" id="email" placeholder="Ex: maria@email.com">
+            </div>
+            <div class="form-group">
+                <label>Área de interesse:</label>
+                <select id="area">
+                    <option value="Saúde">Saúde</option>
+                    <option value="Educação">Educação</option>
+                    <option value="Eventos">Eventos</option>
+                    <option value="Meio Ambiente">Meio Ambiente</option>
+                    <option value="Assistência Social">Assistência Social</option>
+                    <option value="Esportes">Esportes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Disponibilidade:</label>
+                <input type="text" id="disponibilidade" placeholder="Ex: Fins de semana, manhãs">
+            </div>
+            <button type="submit" class="btn">✅ Cadastrar</button>
+            <button type="reset" class="btn" style="background:#95a5a6;">Limpar</button>
+        </form>
+        
+        <hr>
+        
+        <h2>📋 Voluntários Cadastrados</h2>
+        <div id="listaVoluntarios">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Área</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaVoluntarios">
+                    <!-- Os dados serão inseridos aqui pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Carregar voluntários ao abrir a página
+        window.onload = function() {
+            listarVoluntarios();
+        };
+        
+        // Função para cadastrar voluntário
+        document.getElementById('formVoluntario').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value;
+            const cpf = document.getElementById('cpf').value;
+            const telefone = document.getElementById('telefone').value;
+            const email = document.getElementById('email').value;
+            const area = document.getElementById('area').value;
+            const disponibilidade = document.getElementById('disponibilidade').value;
+            
+            if (nome === '') {
+                mostrarMensagem('Preencha o nome do voluntário.', 'erro');
+                return;
+            }
+            
+            // Recuperar voluntários existentes ou criar novo array
+            let voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+            
+            const novoVoluntario = {
+                id: Date.now(),
+                nome: nome,
+                cpf: cpf,
+                telefone: telefone,
+                email: email,
+                area: area,
+                disponibilidade: disponibilidade
+            };
+            
+            voluntarios.push(novoVoluntario);
+            localStorage.setItem('voluntarios', JSON.stringify(voluntarios));
+            
+            mostrarMensagem('✅ Voluntário cadastrado com sucesso!', 'sucesso');
+            document.getElementById('formVoluntario').reset();
+            listarVoluntarios();
+        });
+        
+        // Função para listar voluntários
+        function listarVoluntarios() {
+            const voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+            const tabela = document.getElementById('tabelaVoluntarios');
+            
+            if (voluntarios.length === 0) {
+                tabela.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum voluntário cadastrado.</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            voluntarios.forEach(function(voluntario, index) {
+                html += `
+                    <tr>
+                        <td><strong>${voluntario.nome}</strong></td>
+                        <td>${voluntario.telefone || '-'}</td>
+                        <td>${voluntario.area}</td>
+                        <td>
+                            <button onclick="excluirVoluntario(${index})" class="btn btn-danger" style="padding:5px 10px; font-size:12px;">🗑️ Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tabela.innerHTML = html;
+        }
+        
+        // Função para excluir voluntário
+        function excluirVoluntario(index) {
+            if (confirm('Tem certeza que deseja excluir este voluntário?')) {
+                let voluntarios = JSON.parse(localStorage.getItem('voluntarios')) || [];
+                voluntarios.splice(index, 1);
+                localStorage.setItem('voluntarios', JSON.stringify(voluntarios));
+                listarVoluntarios();
+                mostrarMensagem('🗑️ Voluntário excluído com sucesso!', 'sucesso');
+            }
+        }
+        
+        // Função para mostrar mensagens
+        function mostrarMensagem(texto, tipo) {
+            const div = document.getElementById('mensagem');
+            div.textContent = texto;
+            div.className = 'mensagem';
+            if (tipo === 'erro') {
+                div.classList.add('erro');
+            }
+            div.style.display = 'block';
+            
+            setTimeout(function() {
+                div.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
